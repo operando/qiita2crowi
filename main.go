@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -13,6 +14,7 @@ import (
 var img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
 
 var (
+	debug       = flag.Bool("debug", false, "debug option")
 	accessToken = flag.String("access-token", "", "crowi access token")
 	crowiUrl    = flag.String("crowi-url", "", "your crowi base url")
 	crowiPath   = flag.String("crowi-path", "/qiita", "default path prefix")
@@ -27,26 +29,31 @@ func main() {
 			os.Exit(1)
 		}
 		f.Close()
-		err = qiita2crowi(f)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		qiita2crowi(f)
 	}
 }
 
-func qiita2crowi(r io.Reader) error {
+func qiita2crowi(r io.Reader) {
 	dec := json.NewDecoder(r)
 	var q Qiita
 	dec.Decode(&q)
+
 	for _, article := range q.Articles {
+		// Create Crowi page
 		crowi, err := crowiPageCreate(article.Title, article.Body)
 		if err != nil {
-			return err
+			if *debug {
+				log.Print("[ERROR] ", err)
+			}
+			continue
 		}
 		if !crowi.OK {
-			return fmt.Errorf("%s failed to create Crowi page", article.Title)
+			log.Printf("[ERROR] Failed to create Crowi page: %s", article.Title)
+			continue
 		}
+
+		// Download images in the Qiita text
+		// then upload to Crowi
 		pageId := crowi.Page.ID
 		body := article.Body
 		matched := img.FindAllStringSubmatch(article.RenderedBody, -1)
@@ -55,20 +62,29 @@ func qiita2crowi(r io.Reader) error {
 				for i := 1; i < len(urls); i++ {
 					file, err := downloadImage(urls[i])
 					if err != nil {
-						return err
+						if *debug {
+							log.Print("[ERROR] ", err)
+						}
+						continue
 					}
 					a, err := crowiAttachmentsAdd(pageId, file)
 					if err != nil {
-						return err
+						if *debug {
+							log.Print("[ERROR] ", err)
+						}
+						continue
 					}
 					body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
 				}
 			}
+			// Update image's links in the Crowi page
 			_, err := crowiPageUpdate(pageId, body)
 			if err != nil {
-				return err
+				if *debug {
+					log.Print("[ERROR] ", err)
+				}
+				continue
 			}
 		}
 	}
-	return nil
 }

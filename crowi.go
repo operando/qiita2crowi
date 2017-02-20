@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"os"
+	"path"
 	"time"
 )
 
@@ -154,15 +155,50 @@ func getApiPath(baseUri, endPoint string) (string, error) {
 	return base.ResolveReference(ep).String(), nil
 }
 
+func getSaftyPath(path string) string {
+	return (&url.URL{Path: path}).String()
+}
+
+func getTitlePath(defaultPath, titlePath string) string {
+	return getSaftyPath(path.Clean(path.Join(defaultPath, titlePath)))
+}
+
+func downloadImage(url string) (string, error) {
+	filename := ""
+	response, err := http.Get(url)
+	if err != nil {
+		return filename, err
+	}
+
+	// response.Status
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return filename, err
+	}
+
+	_, filename = path.Split(url)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return filename, err
+	}
+
+	defer func() {
+		file.Close()
+	}()
+
+	file.Write(body)
+	return filename, nil
+}
+
 func crowiPageCreate(title, body string) (c Crowi, err error) {
-	path := *crowiPath + title
+	path := getTitlePath(*crowiPath, title)
 
 	var buffer bytes.Buffer
-	writer := multipart.NewWriter(&buffer)
-	writer.WriteField("access_token", *accessToken)
-	writer.WriteField("body", body)
-	writer.WriteField("path", path)
-	writer.Close()
+	w := multipart.NewWriter(&buffer)
+	w.WriteField("access_token", *accessToken)
+	w.WriteField("body", body)
+	w.WriteField("path", path)
+	w.Close()
 
 	api, err := getApiPath(*crowiUrl, PageCreateAPI)
 	if err != nil {
@@ -171,7 +207,7 @@ func crowiPageCreate(title, body string) (c Crowi, err error) {
 
 	resp, err := http.Post(
 		api,
-		"multipart/form-data; boundary="+writer.Boundary(),
+		"multipart/form-data; boundary="+w.Boundary(),
 		&buffer,
 	)
 	if err != nil {
@@ -192,11 +228,11 @@ func crowiPageCreate(title, body string) (c Crowi, err error) {
 
 func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
 	var buffer bytes.Buffer
-	writer := multipart.NewWriter(&buffer)
-	writer.WriteField("access_token", *accessToken)
-	writer.WriteField("page_id", pageId)
-	writer.WriteField("body", body)
-	writer.Close()
+	w := multipart.NewWriter(&buffer)
+	w.WriteField("access_token", *accessToken)
+	w.WriteField("page_id", pageId)
+	w.WriteField("body", body)
+	w.Close()
 
 	api, err := getApiPath(*crowiUrl, PageCreateAPI)
 	if err != nil {
@@ -205,7 +241,7 @@ func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
 
 	resp, err := http.Post(
 		api,
-		"multipart/form-data; boundary="+writer.Boundary(),
+		"multipart/form-data; boundary="+w.Boundary(),
 		&buffer,
 	)
 	if err != nil {
@@ -226,14 +262,14 @@ func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
 
 func crowiAttachmentsAdd(pageId, file string) (c Attachments, err error) {
 	var buffer bytes.Buffer
-	writer := multipart.NewWriter(&buffer)
-	writer.WriteField("access_token", *accessToken)
-	writer.WriteField("page_id", pageId)
+	w := multipart.NewWriter(&buffer)
+	w.WriteField("access_token", *accessToken)
+	w.WriteField("page_id", pageId)
 	{
 		header := make(textproto.MIMEHeader)
 		header.Add("Content-Disposition", `form-data; name="file"; filename="`+file+`"`)
 		header.Add("Content-Type", "image/png")
-		fileWriter, err := writer.CreatePart(header)
+		fileWriter, err := w.CreatePart(header)
 		if err != nil {
 			return c, err
 		}
@@ -243,7 +279,7 @@ func crowiAttachmentsAdd(pageId, file string) (c Attachments, err error) {
 		}
 		io.Copy(fileWriter, file)
 	}
-	writer.Close()
+	w.Close()
 
 	api, err := getApiPath(*crowiUrl, PageCreateAPI)
 	if err != nil {
@@ -252,7 +288,7 @@ func crowiAttachmentsAdd(pageId, file string) (c Attachments, err error) {
 
 	resp, err := http.Post(
 		api,
-		"multipart/form-data; boundary="+writer.Boundary(),
+		"multipart/form-data; boundary="+w.Boundary(),
 		&buffer,
 	)
 	if err != nil {
