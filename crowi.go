@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -191,13 +192,16 @@ func downloadImage(url string) (string, error) {
 }
 
 func crowiPageCreate(title, body string) (c Crowi, err error) {
-	path := getTitlePath(*crowiPath, title)
+	pagePath := getTitlePath(*pagePath, title)
+	if !path.IsAbs(pagePath) {
+		return c, fmt.Errorf("%s: invalid page path")
+	}
 
 	var buffer bytes.Buffer
 	w := multipart.NewWriter(&buffer)
 	w.WriteField("access_token", *accessToken)
 	w.WriteField("body", body)
-	w.WriteField("path", path)
+	w.WriteField("path", pagePath)
 	w.Close()
 
 	api, err := getApiPath(*crowiUrl, PageCreateAPI)

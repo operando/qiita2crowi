@@ -17,7 +17,7 @@ var (
 	debug       = flag.Bool("debug", false, "debug option")
 	accessToken = flag.String("access-token", "", "crowi access token")
 	crowiUrl    = flag.String("crowi-url", "", "your crowi base url")
-	crowiPath   = flag.String("crowi-path", "/qiita", "default path prefix")
+	pagePath    = flag.String("page-path", "/qiita", "default path prefix")
 )
 
 func main() {
