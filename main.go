@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"flag"
+	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -10,17 +12,40 @@ import (
 
 var img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
 
+var (
+	accessToken = flag.String("access-token", "", "crowi access token")
+	crowiUrl    = flag.String("crowi-url", "", "your crowi base url")
+	crowiPath   = flag.String("crowi-path", "/qiita", "default path prefix")
+)
+
 func main() {
-	dec := json.NewDecoder(os.Stdin)
+	flag.Parse()
+	for _, fn := range flag.Args() {
+		f, err := os.Open(fn)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		f.Close()
+		err = qiita2crowi(f)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+}
+
+func qiita2crowi(r io.Reader) error {
+	dec := json.NewDecoder(r)
 	var q Qiita
 	dec.Decode(&q)
 	for _, article := range q.Articles {
 		crowi, err := crowiPageCreate(article.Title, article.Body)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if !crowi.OK {
-			log.Printf("%s failed to create Crowi page", article.Title)
+			return fmt.Errorf("%s failed to create Crowi page", article.Title)
 		}
 		pageId := crowi.Page.ID
 		body := article.Body
@@ -30,19 +55,20 @@ func main() {
 				for i := 1; i < len(urls); i++ {
 					file, err := downloadImage(urls[i])
 					if err != nil {
-						panic(err)
+						return err
 					}
 					a, err := crowiAttachmentsAdd(pageId, file)
 					if err != nil {
-						panic(err)
+						return err
 					}
 					body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
 				}
 			}
 			_, err := crowiPageUpdate(pageId, body)
 			if err != nil {
-				panic(err)
+				return err
 			}
 		}
 	}
+	return nil
 }
