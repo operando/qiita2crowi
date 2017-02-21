@@ -8,11 +8,12 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var (
-	img     = regexp.MustCompile(`<img .* ?src="(.*?)"`)
-	isError = false
+	img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
+	ch  = make(chan int, 4)
 )
 
 var (
@@ -22,13 +23,6 @@ var (
 	pagePath    = flag.String("page-path", "/qiita", "Default page path")
 )
 
-func printError(msg string) {
-	if *debug {
-		log.Printf("[ERROR] %s", msg)
-	}
-	isError = true
-}
-
 func main() {
 	flag.Parse()
 
@@ -36,49 +30,66 @@ func main() {
 	var q Qiita
 	dec.Decode(&q)
 
-	for _, article := range q.Articles {
-		// Create Crowi page
-		crowi, err := crowiPageCreate(article.Title, article.Body)
-		if err != nil {
-			printError(err.Error())
-			continue
-		}
-		if !crowi.OK {
-			printError(fmt.Sprintf("Failed to create Crowi page: %s (%s)", article.Title, crowi.Error))
-			continue
-		}
+	wg := sync.WaitGroup{}
+	hasError := false
 
-		// Download images in the Qiita text
-		// then upload to Crowi
-		pageId := crowi.Page.ID
-		body := article.Body
-		matched := img.FindAllStringSubmatch(article.RenderedBody, -1)
-		if len(matched) > 0 {
-			for _, urls := range matched {
-				for i := 1; i < len(urls); i++ {
-					file, err := downloadImage(urls[i])
-					if err != nil {
-						printError(err.Error())
-						continue
-					}
-					a, err := crowiAttachmentsAdd(pageId, file)
-					if err != nil {
-						printError(err.Error())
-						continue
-					}
-					body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
+	for _, article := range q.Articles {
+		wg.Add(1)
+		go func(a Articles) {
+			err := qiita2crowi(a)
+			if err != nil {
+				hasError = true
+				if *debug {
+					log.Printf("[ERROR] %s", err.Error())
 				}
 			}
-			// Update image's links in the Crowi page
-			_, err := crowiPageUpdate(pageId, body)
-			if err != nil {
-				printError(err.Error())
-				continue
-			}
-		}
+			wg.Done()
+		}(article)
 	}
+	wg.Wait()
 
-	if isError {
+	if hasError {
 		os.Exit(1)
 	}
+}
+
+func qiita2crowi(article Articles) error {
+	ch <- 1
+	defer func() { <-ch }()
+
+	// Create Crowi page
+	crowi, err := crowiPageCreate(article.Title, article.Body)
+	if err != nil {
+		return err
+	}
+	if !crowi.OK {
+		return fmt.Errorf("Failed to create Crowi page: %s (%s)", article.Title, crowi.Error)
+	}
+
+	// Download images in the Qiita text
+	// then upload to Crowi
+	pageId := crowi.Page.ID
+	body := article.Body
+	matched := img.FindAllStringSubmatch(article.RenderedBody, -1)
+	if len(matched) > 0 {
+		for _, urls := range matched {
+			for i := 1; i < len(urls); i++ {
+				file, err := downloadImage(urls[i])
+				if err != nil {
+					return err
+				}
+				a, err := crowiAttachmentsAdd(pageId, file)
+				if err != nil {
+					return err
+				}
+				body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
+			}
+		}
+		// Update image's links in the Crowi page
+		_, err := crowiPageUpdate(pageId, body)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
