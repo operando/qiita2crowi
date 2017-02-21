@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io"
 	"log"
 	"os"
 	"regexp"
@@ -13,19 +12,16 @@ import (
 var img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
 
 var (
-	debug       = flag.Bool("debug", false, "debug option")
-	accessToken = flag.String("access-token", "", "crowi access token")
-	crowiUrl    = flag.String("crowi-url", "", "your crowi base url")
-	pagePath    = flag.String("page-path", "/qiita", "default path prefix")
+	debug       = flag.Bool("debug", false, "Logging verbosely")
+	accessToken = flag.String("access-token", "", "Crowi's access token")
+	crowiUrl    = flag.String("crowi-url", "", "Your Crowi base URL")
+	pagePath    = flag.String("page-path", "/qiita", "Default page path")
 )
 
 func main() {
 	flag.Parse()
-	qiita2crowi(os.Stdin)
-}
 
-func qiita2crowi(r io.Reader) {
-	dec := json.NewDecoder(r)
+	dec := json.NewDecoder(os.Stdin)
 	var q Qiita
 	dec.Decode(&q)
 
