@@ -22,126 +22,121 @@ const (
 )
 
 type Crowi struct {
-	Page struct {
-		Revision struct {
-			__V       int       `json:"__v"`
-			Author    string    `json:"author"`
-			Body      string    `json:"body"`
-			Path      string    `json:"path"`
-			_ID       string    `json:"_id"`
-			CreatedAt time.Time `json:"createdAt"`
-			Format    string    `json:"format"`
-		} `json:"revision"`
-		__V            int         `json:"__v"`
-		RedirectTo     interface{} `json:"redirectTo"`
-		UpdatedAt      time.Time   `json:"updatedAt"`
-		LastUpdateUser struct {
-			_ID       string    `json:"_id"`
-			Name      string    `json:"name"`
-			Username  string    `json:"username"`
-			Email     string    `json:"email"`
-			Status    int       `json:"status"`
-			CreatedAt time.Time `json:"createdAt"`
-		} `json:"lastUpdateUser"`
-		Creator struct {
-			_ID       string    `json:"_id"`
-			Name      string    `json:"name"`
-			Username  string    `json:"username"`
-			Email     string    `json:"email"`
-			Status    int       `json:"status"`
-			CreatedAt time.Time `json:"createdAt"`
-		} `json:"creator"`
-		Path         string        `json:"path"`
-		_ID          string        `json:"_id"`
-		CreatedAt    time.Time     `json:"createdAt"`
-		CommentCount int           `json:"commentCount"`
-		SeenUsers    []interface{} `json:"seenUsers"`
-		Liker        []interface{} `json:"liker"`
-		GrantedUsers []string      `json:"grantedUsers"`
-		Grant        int           `json:"grant"`
-		Status       string        `json:"status"`
-		ID           string        `json:"id"`
-	} `json:"page"`
-	Attachment struct {
-		__V          int       `json:"__v"`
-		FileFormat   string    `json:"fileFormat"`
-		FileName     string    `json:"fileName"`
-		OriginalName string    `json:"originalName"`
-		FilePath     string    `json:"filePath"`
-		Creator      string    `json:"creator"`
-		Page         string    `json:"page"`
-		_ID          string    `json:"_id"`
-		CreatedAt    time.Time `json:"createdAt"`
-		FileSize     int       `json:"fileSize"`
-	} `json:"attachment"`
-	Filename string `json:"filename"`
-	OK       bool   `json:"ok"`
-	Error    string `json:"error"`
+	CrowiPages       CrowiPages
+	CrowiAttachments CrowiAttachments
 }
 
-type Attachments struct {
-	Page struct {
-		_ID            string      `json:"_id"`
-		RedirectTo     interface{} `json:"redirectTo"`
-		UpdatedAt      time.Time   `json:"updatedAt"`
-		LastUpdateUser struct {
-			_ID       string    `json:"_id"`
-			Email     string    `json:"email"`
-			Username  string    `json:"username"`
-			Name      string    `json:"name"`
-			Admin     bool      `json:"admin"`
-			CreatedAt time.Time `json:"createdAt"`
-			Status    int       `json:"status"`
-		} `json:"lastUpdateUser"`
-		Creator struct {
-			_ID       string    `json:"_id"`
-			Name      string    `json:"name"`
-			Username  string    `json:"username"`
-			Email     string    `json:"email"`
-			Status    int       `json:"status"`
-			CreatedAt time.Time `json:"createdAt"`
-		} `json:"creator"`
-		Path     string `json:"path"`
-		__V      int    `json:"__v"`
-		Revision struct {
-			_ID    string `json:"_id"`
-			Author struct {
-				_ID       string    `json:"_id"`
-				Email     string    `json:"email"`
-				Username  string    `json:"username"`
-				Name      string    `json:"name"`
-				Admin     bool      `json:"admin"`
-				CreatedAt time.Time `json:"createdAt"`
-				Status    int       `json:"status"`
-			} `json:"author"`
-			Body      string    `json:"body"`
-			Path      string    `json:"path"`
-			__V       int       `json:"__v"`
-			CreatedAt time.Time `json:"createdAt"`
-			Format    string    `json:"format"`
-		} `json:"revision"`
-		CreatedAt    time.Time     `json:"createdAt"`
-		CommentCount int           `json:"commentCount"`
-		SeenUsers    []string      `json:"seenUsers"`
-		Liker        []interface{} `json:"liker"`
-		GrantedUsers []string      `json:"grantedUsers"`
-		Grant        int           `json:"grant"`
-		Status       string        `json:"status"`
-		ID           string        `json:"id"`
-	} `json:"page"`
-	Attachment struct {
-		__V          int       `json:"__v"`
-		FileFormat   string    `json:"fileFormat"`
-		FileName     string    `json:"fileName"`
-		OriginalName string    `json:"originalName"`
-		FilePath     string    `json:"filePath"`
-		Creator      string    `json:"creator"`
-		Page         string    `json:"page"`
-		_ID          string    `json:"_id"`
-		CreatedAt    time.Time `json:"createdAt"`
-		FileSize     int       `json:"fileSize"`
-	} `json:"attachment"`
-	Filename string `json:"filename"`
+type CrowiPages struct {
+	Page       PagesPage  `json:"page"`
+	Attachment Attachment `json:"attachment"`
+	OK         bool       `json:"ok"`
+	Error      string     `json:"error"`
+}
+
+type CrowiAttachments struct {
+	Page       AttachmentsPage `json:"page"`
+	Attachment Attachment      `json:"attachment"`
+	Filename   string          `json:"filename"`
+	OK         bool            `json:"ok"`
+	Error      string          `json:"error"`
+}
+
+type PagesPage struct {
+	Revision       PagesRevision  `json:"revision"`
+	_ID            string         `json:"_id"`
+	RedirectTo     interface{}    `json:"redirectTo"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	LastUpdateUser LastUpdateUser `json:"lastUpdateUser"`
+	Creator        Creator        `json:"creator"`
+	Path           string         `json:"path"`
+	__V            int            `json:"__v"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	CommentCount   int            `json:"commentCount"`
+	SeenUsers      []string       `json:"seenUsers"`
+	Liker          []interface{}  `json:"liker"`
+	GrantedUsers   []string       `json:"grantedUsers"`
+	Grant          int            `json:"grant"`
+	Status         string         `json:"status"`
+	ID             string         `json:"id"`
+}
+
+type AttachmentsPage struct {
+	Revision       AttachmentsRevision `json:"revision"`
+	_ID            string              `json:"_id"`
+	RedirectTo     interface{}         `json:"redirectTo"`
+	UpdatedAt      time.Time           `json:"updatedAt"`
+	LastUpdateUser LastUpdateUser      `json:"lastUpdateUser"`
+	Creator        Creator             `json:"creator"`
+	Path           string              `json:"path"`
+	__V            int                 `json:"__v"`
+	CreatedAt      time.Time           `json:"createdAt"`
+	CommentCount   int                 `json:"commentCount"`
+	SeenUsers      []string            `json:"seenUsers"`
+	Liker          []interface{}       `json:"liker"`
+	GrantedUsers   []string            `json:"grantedUsers"`
+	Grant          int                 `json:"grant"`
+	Status         string              `json:"status"`
+	ID             string              `json:"id"`
+}
+
+type Attachment struct {
+	__V          int       `json:"__v"`
+	FileFormat   string    `json:"fileFormat"`
+	FileName     string    `json:"fileName"`
+	OriginalName string    `json:"originalName"`
+	FilePath     string    `json:"filePath"`
+	Creator      string    `json:"creator"`
+	Page         string    `json:"page"`
+	_ID          string    `json:"_id"`
+	CreatedAt    time.Time `json:"createdAt"`
+	FileSize     int       `json:"fileSize"`
+}
+
+type PagesRevision struct {
+	__V       int       `json:"__v"`
+	Author    string    `json:"author"`
+	Body      string    `json:"body"`
+	Path      string    `json:"path"`
+	_ID       string    `json:"_id"`
+	CreatedAt time.Time `json:"createdAt"`
+	Format    string    `json:"format"`
+}
+
+type AttachmentsRevision struct {
+	_ID    string `json:"_id"`
+	Author struct {
+		_ID       string    `json:"_id"`
+		Email     string    `json:"email"`
+		Username  string    `json:"username"`
+		Name      string    `json:"name"`
+		Admin     bool      `json:"admin"`
+		CreatedAt time.Time `json:"createdAt"`
+		Status    int       `json:"status"`
+	} `json:"author"`
+	Body      string    `json:"body"`
+	Path      string    `json:"path"`
+	__V       int       `json:"__v"`
+	CreatedAt time.Time `json:"createdAt"`
+	Format    string    `json:"format"`
+}
+
+type LastUpdateUser struct {
+	_ID       string    `json:"_id"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Name      string    `json:"name"`
+	Admin     bool      `json:"admin"`
+	Status    int       `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type Creator struct {
+	_ID       string    `json:"_id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Status    int       `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func getApiPath(baseUri, endPoint string) (string, error) {
@@ -191,7 +186,7 @@ func downloadImage(url string) (string, error) {
 	return filename, nil
 }
 
-func crowiPageCreate(title, body string) (c Crowi, err error) {
+func crowiPageCreate(title, body string) (c CrowiPages, err error) {
 	pagePath := path.Clean(path.Join(*pagePath, title))
 	if !path.IsAbs(pagePath) {
 		return c, fmt.Errorf("%s: invalid page path", pagePath)
@@ -230,7 +225,7 @@ func crowiPageCreate(title, body string) (c Crowi, err error) {
 	return
 }
 
-func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
+func crowiPageUpdate(pageId, body string) (c CrowiPages, err error) {
 	var buffer bytes.Buffer
 	w := multipart.NewWriter(&buffer)
 	w.WriteField("access_token", *accessToken)
@@ -264,7 +259,7 @@ func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
 	return
 }
 
-func crowiAttachmentsAdd(pageId, file string) (c Attachments, err error) {
+func crowiAttachmentsAdd(pageId, file string) (c CrowiAttachments, err error) {
 	var buffer bytes.Buffer
 	w := multipart.NewWriter(&buffer)
 	w.WriteField("access_token", *accessToken)
