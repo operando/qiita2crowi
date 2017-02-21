@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -22,15 +21,7 @@ var (
 
 func main() {
 	flag.Parse()
-	for _, fn := range flag.Args() {
-		f, err := os.Open(fn)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		f.Close()
-		qiita2crowi(f)
-	}
+	qiita2crowi(os.Stdin)
 }
 
 func qiita2crowi(r io.Reader) {
@@ -43,12 +34,13 @@ func qiita2crowi(r io.Reader) {
 		crowi, err := crowiPageCreate(article.Title, article.Body)
 		if err != nil {
 			if *debug {
-				log.Print("[ERROR] ", err)
+				log.Printf("[ERROR] %s", err.Error())
 			}
 			continue
 		}
 		if !crowi.OK {
 			log.Printf("[ERROR] Failed to create Crowi page: %s", article.Title)
+			log.Printf(crowi.Error)
 			continue
 		}
 
@@ -63,14 +55,14 @@ func qiita2crowi(r io.Reader) {
 					file, err := downloadImage(urls[i])
 					if err != nil {
 						if *debug {
-							log.Print("[ERROR] ", err)
+							log.Print("[ERROR] %s", err.Error())
 						}
 						continue
 					}
 					a, err := crowiAttachmentsAdd(pageId, file)
 					if err != nil {
 						if *debug {
-							log.Print("[ERROR] ", err)
+							log.Print("[ERROR] %s", err.Error())
 						}
 						continue
 					}
@@ -81,7 +73,7 @@ func qiita2crowi(r io.Reader) {
 			_, err := crowiPageUpdate(pageId, body)
 			if err != nil {
 				if *debug {
-					log.Print("[ERROR] ", err)
+					log.Print("[ERROR] %s", err.Error())
 				}
 				continue
 			}

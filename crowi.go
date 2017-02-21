@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	PageUpdateAPI     = "/_api/pages.create"
-	PageCreateAPI     = "/_api/pages.update"
+	PagesCreateAPI    = "/_api/pages.create"
+	PagesUpdateAPI    = "/_api/pages.update"
 	AttachmentsAddAPI = "/_api/attachments.add"
 )
 
@@ -192,9 +192,9 @@ func downloadImage(url string) (string, error) {
 }
 
 func crowiPageCreate(title, body string) (c Crowi, err error) {
-	pagePath := getTitlePath(*pagePath, title)
+	pagePath := path.Clean(path.Join(*pagePath, title))
 	if !path.IsAbs(pagePath) {
-		return c, fmt.Errorf("%s: invalid page path")
+		return c, fmt.Errorf("%s: invalid page path", pagePath)
 	}
 
 	var buffer bytes.Buffer
@@ -204,7 +204,7 @@ func crowiPageCreate(title, body string) (c Crowi, err error) {
 	w.WriteField("path", pagePath)
 	w.Close()
 
-	api, err := getApiPath(*crowiUrl, PageCreateAPI)
+	api, err := getApiPath(*crowiUrl, PagesCreateAPI)
 	if err != nil {
 		return
 	}
@@ -238,7 +238,7 @@ func crowiPageUpdate(pageId, body string) (c Crowi, err error) {
 	w.WriteField("body", body)
 	w.Close()
 
-	api, err := getApiPath(*crowiUrl, PageCreateAPI)
+	api, err := getApiPath(*crowiUrl, PagesUpdateAPI)
 	if err != nil {
 		return
 	}
@@ -285,7 +285,7 @@ func crowiAttachmentsAdd(pageId, file string) (c Attachments, err error) {
 	}
 	w.Close()
 
-	api, err := getApiPath(*crowiUrl, PageCreateAPI)
+	api, err := getApiPath(*crowiUrl, AttachmentsAddAPI)
 	if err != nil {
 		return
 	}
