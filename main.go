@@ -3,13 +3,17 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strings"
 )
 
-var img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
+var (
+	img     = regexp.MustCompile(`<img .* ?src="(.*?)"`)
+	isError = false
+)
 
 var (
 	debug       = flag.Bool("debug", false, "Logging verbosely")
@@ -17,6 +21,13 @@ var (
 	crowiUrl    = flag.String("crowi-url", "", "Your Crowi base URL")
 	pagePath    = flag.String("page-path", "/qiita", "Default page path")
 )
+
+func printError(msg string) {
+	if *debug {
+		log.Printf("[ERROR] %s", msg)
+	}
+	isError = true
+}
 
 func main() {
 	flag.Parse()
@@ -29,14 +40,11 @@ func main() {
 		// Create Crowi page
 		crowi, err := crowiPageCreate(article.Title, article.Body)
 		if err != nil {
-			if *debug {
-				log.Printf("[ERROR] %s", err.Error())
-			}
+			printError(err.Error())
 			continue
 		}
 		if !crowi.OK {
-			log.Printf("[ERROR] Failed to create Crowi page: %s", article.Title)
-			log.Printf(crowi.Error)
+			printError(fmt.Sprintf("Failed to create Crowi page: %s (%s)", article.Title, crowi.Error))
 			continue
 		}
 
@@ -50,16 +58,12 @@ func main() {
 				for i := 1; i < len(urls); i++ {
 					file, err := downloadImage(urls[i])
 					if err != nil {
-						if *debug {
-							log.Print("[ERROR] %s", err.Error())
-						}
+						printError(err.Error())
 						continue
 					}
 					a, err := crowiAttachmentsAdd(pageId, file)
 					if err != nil {
-						if *debug {
-							log.Print("[ERROR] %s", err.Error())
-						}
+						printError(err.Error())
 						continue
 					}
 					body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
@@ -68,11 +72,13 @@ func main() {
 			// Update image's links in the Crowi page
 			_, err := crowiPageUpdate(pageId, body)
 			if err != nil {
-				if *debug {
-					log.Print("[ERROR] %s", err.Error())
-				}
+				printError(err.Error())
 				continue
 			}
 		}
+	}
+
+	if isError {
+		os.Exit(1)
 	}
 }
