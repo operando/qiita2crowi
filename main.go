@@ -102,5 +102,19 @@ func qiita2crowi(article Articles) error {
 			return err
 		}
 	}
+
+	// If there are comments, add those at the end of the body
+	if len(article.Comments) > 0 {
+		body += "# Comments by Qiita:Team\n"
+		for _, comment := range article.Comments {
+			body += fmt.Sprintf("## %s\n", comment.(map[string]interface{})["user"].(map[string]interface{})["id"].(string))
+			body += comment.(map[string]interface{})["body"].(string)
+		}
+		_, err = crowiPageUpdate(pageId, body)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
