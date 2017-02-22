@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	img = regexp.MustCompile(`<img .* ?src="(.*?)"`)
+	img = regexp.MustCompile(`<img .* ?src="(https?://.*?)"`)
 	ch  = make(chan int, 4)
 )
 
