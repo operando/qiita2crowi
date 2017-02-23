@@ -89,11 +89,11 @@ func qiita2crowi(article Articles) error {
 				if err != nil {
 					return err
 				}
-				a, err := crowiAttachmentsAdd(pageId, file)
+				crowi, err := crowiAttachmentsAdd(pageId, file)
 				if err != nil {
 					return err
 				}
-				body = strings.Replace(body, urls[i], "/uploads/"+a.Attachment.FilePath, -1)
+				body = strings.Replace(body, urls[i], crowi.Filename, -1)
 			}
 		}
 		// Update image's links in the Crowi page
