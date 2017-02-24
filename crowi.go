@@ -152,11 +152,14 @@ func getApiPath(baseUri, endPoint string) (string, error) {
 }
 
 func getSaftyPath(path string) string {
-	return (&url.URL{Path: path}).String()
+	return urlSafe.Replace(path)
 }
 
 func getTitlePath(defaultPath, titlePath string) string {
-	return getSaftyPath(path.Clean(path.Join(defaultPath, titlePath)))
+	return path.Clean(path.Join(
+		defaultPath,
+		getSaftyPath(titlePath),
+	))
 }
 
 func downloadImage(url string) (string, error) {
@@ -187,7 +190,7 @@ func downloadImage(url string) (string, error) {
 }
 
 func crowiPageCreate(title, body string) (c CrowiPages, err error) {
-	pagePath := path.Clean(path.Join(*pagePath, title))
+	pagePath := getTitlePath(*pagePath, title)
 	if !path.IsAbs(pagePath) {
 		return c, fmt.Errorf("%s: invalid page path", pagePath)
 	}
