@@ -4,13 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
-
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 var (
@@ -35,24 +32,12 @@ func main() {
 	wg := sync.WaitGroup{}
 	hasError := false
 
-	total := len(q.Articles)
-	bar := pb.New(total)
-	if !*debug {
-		bar.Start()
-	}
-
 	for _, article := range q.Articles {
 		wg.Add(1)
 		go func(a Articles) {
 			err := qiita2crowi(a)
 			if err != nil {
 				hasError = true
-				if *debug {
-					log.Printf("[ERROR] %s", err.Error())
-				}
-			}
-			if !*debug {
-				bar.Increment()
 			}
 			wg.Done()
 		}(article)
