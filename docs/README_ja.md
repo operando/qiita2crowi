@@ -14,8 +14,6 @@ Usage of ./qiita2crowi:
         Crowi's access token
   -crowi-url string
         Your Crowi base URL
-  -debug
-        Logging verbosely
   -page-path string
         Default page path (default "/qiita")
 ```

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -16,7 +17,6 @@ var (
 )
 
 var (
-	debug       = flag.Bool("debug", false, "Logging verbosely")
 	accessToken = flag.String("access-token", "", "Crowi's access token")
 	crowiUrl    = flag.String("crowi-url", "", "Your Crowi base URL")
 	pagePath    = flag.String("page-path", "/qiita", "Default page path")
@@ -25,26 +25,28 @@ var (
 func main() {
 	flag.Parse()
 
-	dec := json.NewDecoder(os.Stdin)
 	var q Qiita
+	dec := json.NewDecoder(os.Stdin)
 	dec.Decode(&q)
 
 	wg := sync.WaitGroup{}
-	hasError := false
+	errs := 0
 
 	for _, article := range q.Articles {
 		wg.Add(1)
 		go func(a Articles) {
 			err := qiita2crowi(a)
 			if err != nil {
-				hasError = true
+				log.Printf("[ERROR] %s", err.Error())
+				errs++
 			}
 			wg.Done()
 		}(article)
 	}
 	wg.Wait()
 
-	if hasError {
+	if errs > 0 {
+		log.Printf("Failures %d/%d pages", errs, len(q.Articles))
 		os.Exit(1)
 	}
 }
