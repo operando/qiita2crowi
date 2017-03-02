@@ -27,7 +27,10 @@ func main() {
 
 	var q Qiita
 	dec := json.NewDecoder(os.Stdin)
-	dec.Decode(&q)
+	if err := dec.Decode(&q); err != nil {
+		log.Printf("[ERROR] local json syntax error: %s", err.Error())
+		os.Exit(1)
+	}
 
 	wg := sync.WaitGroup{}
 	errs := 0
