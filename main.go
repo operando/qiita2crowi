@@ -56,6 +56,10 @@ func qiita2crowi(article Articles) error {
 	defer func() { <-ch }()
 
 	// Create Crowi page
+	article.Body = fmt.Sprintf("<!-- Imported by\n%s\n-->\n\n%s",
+		strings.TrimLeft(article.URL, "https://"),
+		article.Body,
+	)
 	crowi, err := crowiPageCreate(article.Title, article.Body)
 	if err != nil {
 		return err
