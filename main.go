@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -64,18 +63,17 @@ type Projects struct {
 	} `json:"user"`
 }
 
-var urlSafe = strings.NewReplacer(
-	`^`, `＾`, // for Crowi's regexp
-	`$`, `＄`,
-	`*`, `＊`,
-	`%`, `％`, // query
-	`?`, `？`,
-	`/`, `／`, // Prevent unexpected stratification
-)
-
 var (
-	img = regexp.MustCompile(`<img .* ?src="(https?://.*?)"`)
-	ch  = make(chan int, 4)
+	img     = regexp.MustCompile(`<img .* ?src="(https?://.*?)"`)
+	ch      = make(chan int, 4)
+	urlSafe = strings.NewReplacer(
+		`^`, `＾`, // for Crowi's regexp
+		`$`, `＄`,
+		`*`, `＊`,
+		`%`, `％`, // query
+		`?`, `？`,
+		`/`, `／`, // Prevent unexpected stratification
+	)
 )
 
 var (
@@ -95,7 +93,7 @@ func main() {
 	}
 
 	wg := sync.WaitGroup{}
-	errs := 0
+	errNum := 0
 
 	client, err := crowi.NewClient(*crowiUrl, *accessToken)
 	if err != nil {
@@ -105,21 +103,22 @@ func main() {
 
 	for _, article := range q.Articles {
 		wg.Add(1)
-		go func(a Articles) {
-			err := qiita2crowi(client, a)
+		go func(article Articles) {
+			err := qiita2crowi(client, article)
 			if err != nil {
 				log.Printf("[ERROR] %s", err.Error())
-				errs++
+				errNum++
 			}
 			wg.Done()
 		}(article)
 	}
 	wg.Wait()
 
-	if errs > 0 {
-		log.Printf("Failures %d/%d pages", errs, len(q.Articles))
+	if errNum > 0 {
+		log.Printf("Failures %d/%d pages", errNum, len(q.Articles))
 		os.Exit(1)
 	}
+	log.Printf("Finished.")
 }
 
 func qiita2crowi(client *crowi.Client, article Articles) error {
@@ -130,12 +129,12 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 	if !path.IsAbs(pagePath) {
 		return fmt.Errorf("%s: invalid page path", pagePath)
 	}
-	// Create Crowi page
-	article.Body = fmt.Sprintf("<!-- Imported by\n%s\n-->\n\n%s",
+
+	pageBody := fmt.Sprintf("<!-- Imported by\n%s\n-->\n\n%s",
 		strings.TrimLeft(article.URL, "https://"),
 		article.Body,
 	)
-	res, err := client.PagesCreate(pagePath, article.Body)
+	res, err := client.PagesCreate(pagePath, pageBody)
 	if err != nil {
 		return err
 	}
@@ -146,7 +145,6 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 	// Download images in the Qiita text
 	// then upload to Crowi
 	pageId := res.Page.ID
-	body := article.Body
 	matched := img.FindAllStringSubmatch(article.RenderedBody, -1)
 	if len(matched) > 0 {
 		for _, urls := range matched {
@@ -162,11 +160,11 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 				if !res.OK {
 					return errors.New(res.Error)
 				}
-				body = strings.Replace(body, urls[i], res.Filename, -1)
+				pageBody = strings.Replace(pageBody, urls[i], res.Filename, -1)
 			}
 		}
 		// Update image's links in the Crowi page
-		res, err = client.PagesUpdate(pageId, body)
+		res, err = client.PagesUpdate(pageId, pageBody)
 		if err != nil {
 			return err
 		}
@@ -177,12 +175,12 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 
 	// If there are comments, add those at the end of the body
 	if len(article.Comments) > 0 {
-		body += "# Comments by Qiita:Team\n"
+		pageBody += "# Comments by Qiita:Team\n"
 		for _, comment := range article.Comments {
-			body += fmt.Sprintf("## %s\n", comment.(map[string]interface{})["user"].(map[string]interface{})["id"].(string))
-			body += comment.(map[string]interface{})["body"].(string)
+			pageBody += fmt.Sprintf("## %s\n", comment.(map[string]interface{})["user"].(map[string]interface{})["id"].(string))
+			pageBody += comment.(map[string]interface{})["body"].(string)
 		}
-		res, err = client.PagesUpdate(pageId, body)
+		res, err = client.PagesUpdate(pageId, pageBody)
 		if err != nil {
 			return err
 		}
@@ -194,52 +192,36 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 	return nil
 }
 
-func getApiPath(baseUri, endPoint string) (string, error) {
-	base, err := url.Parse(baseUri)
-	if err != nil {
-		return "", err
-	}
-	ep, err := url.Parse(endPoint)
-	if err != nil {
-		return "", err
-	}
-	return base.ResolveReference(ep).String(), nil
-}
-
 func getSaftyPath(path string) string {
 	return urlSafe.Replace(path)
 }
 
-func getTitlePath(defaultPath, titlePath string) string {
+func getTitlePath(basePath, titlePath string) string {
 	return path.Clean(path.Join(
-		defaultPath,
+		basePath,
 		getSaftyPath(titlePath),
 	))
 }
 
-func downloadImage(url string) (string, error) {
-	filename := ""
+func downloadImage(url string) (filename string, err error) {
 	response, err := http.Get(url)
 	if err != nil {
-		return filename, err
+		return
 	}
 
 	// response.Status
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return filename, err
+		return
 	}
 
 	_, filename = path.Split(url)
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		return filename, err
+		return
 	}
-
-	defer func() {
-		file.Close()
-	}()
+	defer file.Close()
 
 	file.Write(body)
-	return filename, nil
+	return
 }
