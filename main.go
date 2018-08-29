@@ -203,10 +203,10 @@ func getSaftyPath(path string) string {
 }
 
 func getTitlePath(basePath, titlePath string) string {
-	return path.Clean(path.Join(
+	return strings.Replace(path.Clean(path.Join(
 		basePath,
 		getSaftyPath(titlePath),
-	))
+	)), "#", "", -1)
 }
 
 func downloadImage(url string) (filename string, err error) {
