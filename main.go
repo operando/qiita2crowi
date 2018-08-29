@@ -78,9 +78,10 @@ var (
 )
 
 var (
-	accessToken = flag.String("access-token", "", "Crowi's access token")
-	crowiUrl    = flag.String("crowi-url", "", "Your Crowi base URL")
-	pagePath    = flag.String("page-path", "/qiita", "Default page path")
+	accessToken      = flag.String("access-token", "", "Crowi's access token")
+	crowiUrl         = flag.String("crowi-url", "", "Your Crowi base URL")
+	pagePath         = flag.String("page-path", "/qiita", "Default page path")
+	qiitaAccessToken = flag.String("qiita-access-token", "", "Qiita's access token")
 )
 
 func main() {
@@ -165,7 +166,7 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 				if !res.OK {
 					return errors.New("")
 				}
-				pageBody = strings.Replace(pageBody, urls[i], res.Filename, -1)
+				pageBody = strings.Replace(pageBody, urls[i], *crowiUrl+"files/"+res.Attachment.ID, -1)
 			}
 		}
 		// Update image's links in the Crowi page
@@ -209,7 +210,15 @@ func getTitlePath(basePath, titlePath string) string {
 }
 
 func downloadImage(url string) (filename string, err error) {
-	response, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	if !strings.Contains(url, "qiita-image-store.s3.amazonaws.com") || !strings.Contains(url, "amazonaws.com") {
+		req.Header.Add("Authorization", "Bearer " + *qiitaAccessToken)
+	}
+	client := new(http.Client)
+	response, err := client.Do(req)
 	if err != nil {
 		return
 	}
