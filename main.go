@@ -15,7 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/b4b4r07/go-crowi"
+	"github.com/crowi/go-crowi"
+	"golang.org/x/net/context"
 )
 
 type Qiita struct {
@@ -95,7 +96,11 @@ func main() {
 	wg := sync.WaitGroup{}
 	errNum := 0
 
-	client, err := crowi.NewClient(*crowiUrl, *accessToken)
+	cfg := crowi.Config{
+		URL:   *crowiUrl,
+		Token: *accessToken,
+	}
+	client, err := crowi.NewClient(cfg)
 	if err != nil {
 		log.Printf("[ERROR] %s", err.Error())
 		os.Exit(1)
@@ -134,7 +139,7 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 		strings.TrimLeft(article.URL, "https://"),
 		article.Body,
 	)
-	res, err := client.PagesCreate(pagePath, pageBody)
+	res, err := client.Pages.Create(context.Background(), pagePath, pageBody)
 	if err != nil {
 		return err
 	}
@@ -153,18 +158,18 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 				if err != nil {
 					return err
 				}
-				res, err := client.AttachmentsAdd(pageId, file)
+				res, err := client.Attachments.Add(context.Background(), pageId, file)
 				if err != nil {
 					return err
 				}
 				if !res.OK {
-					return errors.New(res.Error)
+					return errors.New("")
 				}
 				pageBody = strings.Replace(pageBody, urls[i], res.Filename, -1)
 			}
 		}
 		// Update image's links in the Crowi page
-		res, err = client.PagesUpdate(pageId, pageBody)
+		res, err := client.Pages.Update(context.Background(), pageId, pageBody)
 		if err != nil {
 			return err
 		}
@@ -180,7 +185,7 @@ func qiita2crowi(client *crowi.Client, article Articles) error {
 			pageBody += fmt.Sprintf("## %s\n", comment.(map[string]interface{})["user"].(map[string]interface{})["id"].(string))
 			pageBody += comment.(map[string]interface{})["body"].(string)
 		}
-		res, err = client.PagesUpdate(pageId, pageBody)
+		res, err := client.Pages.Update(context.Background(), pageId, pageBody)
 		if err != nil {
 			return err
 		}
