@@ -34,14 +34,14 @@ type Articles struct {
 	Group        interface{} `json:"group"`
 	ID           string      `json:"id"`
 	Private      bool        `json:"private"`
-	Tags         []struct {
+	Tags []struct {
 		Name     string        `json:"name"`
 		Versions []interface{} `json:"versions"`
 	} `json:"tags"`
 	Title     string    `json:"title"`
 	UpdatedAt time.Time `json:"updated_at"`
 	URL       string    `json:"url"`
-	User      struct {
+	User struct {
 		ID              string `json:"id"`
 		PermanentID     int    `json:"permanent_id"`
 		ProfileImageURL string `json:"profile_image_url"`
@@ -57,7 +57,7 @@ type Projects struct {
 	ID           int       `json:"id"`
 	Name         string    `json:"name"`
 	UpdatedAt    time.Time `json:"updated_at"`
-	User         struct {
+	User struct {
 		ID              string `json:"id"`
 		PermanentID     int    `json:"permanent_id"`
 		ProfileImageURL string `json:"profile_image_url"`
