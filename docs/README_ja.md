@@ -16,6 +16,8 @@ Usage of ./qiita2crowi:
         Your Crowi base URL
   -page-path string
         Default page path (default "/qiita")
+  -qiita-access-token string
+        Qiita's access token
 ```
 
 実行するには `-access-token` と `-crowi-url` の指定が必須です。それぞれ、Crowi のアクセストークンとベース URL が必要です。
@@ -25,7 +27,8 @@ $ cat exported-data-from-qiita.json \
     | qiita2crowi \
     -access-token="abcdefghijklmnopqrstuvwxyz=" \
     -crowi-url="http://your.crowi.url" \
-    -page-path="/qiita/pages"
+    -page-path="/qiita/pages" \
+    -qiita-access-token="abcdefghijklmnopqrstuvwxyz="
 ```
 
 ### 仕様
